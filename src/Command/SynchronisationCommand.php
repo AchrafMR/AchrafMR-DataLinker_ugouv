@@ -150,7 +150,7 @@ class SynchronisationCommand extends Command
     }
     private function upsertDataIntoTable(array $data, string $tableName, string $schema): void
     {
-        $tableNameSchema = $schema . '.' . $tableName;
+        $tableNameSchema = "ugouv" . '.' . $tableName;
         $this->connection->beginTransaction();
         try {
             // Temporarily disable foreign key checks
