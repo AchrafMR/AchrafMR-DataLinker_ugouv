@@ -35,3 +35,39 @@ class TestController extends AbstractController
         return new JsonResponse($tableNames);
     }
 }
+    // Method to handle inserting or updating data in the local database
+    // private function upsertDataIntoTable(array $data, string $tableName): void
+    // {
+    //     $this->connection->beginTransaction();
+
+    //     try {
+    //         $this->connection->executeQuery('SET foreign_key_checks = 0');
+
+    //         foreach ($data as $row) {
+    //             $columns = array_keys($row);
+
+    //             $sql = sprintf(
+    //                 'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
+    //                 $tableName,
+    //                 implode(',', $columns),
+    //                 implode(',', array_map(fn($col) => ':' . $col, $columns)),
+    //                 implode(',', array_map(fn($col) => "$col = VALUES($col)", $columns))
+    //             );
+
+    //             $stmt = $this->connection->prepare($sql);
+
+    //             foreach ($row as $column => $value) {
+    //                 $stmt->bindValue(':' . $column, $value);
+    //             }
+
+    //             $stmt->executeQuery();
+    //         }
+
+    //         $this->connection->commit();
+    //         $this->connection->executeQuery('SET foreign_key_checks = 1');
+    //     } catch (\Exception $e) {
+    //         $this->connection->rollBack();
+    //         $this->connection->executeQuery('SET foreign_key_checks = 1');
+    //         throw $e;
+    //     }
+    // }

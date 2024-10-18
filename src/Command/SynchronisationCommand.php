@@ -82,7 +82,10 @@ class SynchronisationCommand extends Command
                 // dd($table);
                 $tableName = $table['TABLE_NAME'];
                 $schema = $table['TABLE_SCHEMA'];
-                $tableName = 'ua_t_facturefrscab';
+
+                //  $tableName = 'ua_t_commandefrscab';
+                $tableName = 'Tbl_Example';
+                // dd($tableName) ;
 
                 // Fetch unsynchronized data from the API
                 //LIMIT 10 just for test
@@ -94,11 +97,10 @@ class SynchronisationCommand extends Command
 
                 if ($response->getStatusCode() === 200) {
                     $data = $response->toArray();
-                    // dd($data);
+                    //  dd($data);
                     if (!empty($data)) {
                         $columnIds = array_column($data, 'id');
                         $columnIdsString = implode(', ', $columnIds);
-
                         $this->upsertDataIntoTable($data, $tableName ,$schema);
 
                         // Mark the data as synchronized via API call
@@ -125,7 +127,7 @@ class SynchronisationCommand extends Command
                     return 1; // Return failure
                 }
 
-                dd('good');
+                // dd('good');
             }
 
             // If all tables are processed successfully, log success
@@ -148,105 +150,167 @@ class SynchronisationCommand extends Command
     }
     private function upsertDataIntoTable(array $data, string $tableName, string $schema): void
     {
-        $tableNameSchema = $schema.'.'.$tableName;
+        $tableNameSchema = $schema . '.' . $tableName;
         $this->connection->beginTransaction();
-
         try {
             // Temporarily disable foreign key checks
             $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
-            $columnTypesStmt = $this->connection->query("
+            // Enable IDENTITY_INSERT for the table if it has an identity column
+            $this->connection->executeQuery('SET IDENTITY_INSERT ' . $tableNameSchema . ' ON');
+            // Retrieve column types from the information schema
+            $columnTypesStmt = $this->connection->executeQuery("
                 SELECT COLUMN_NAME, DATA_TYPE
                 FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_NAME = '$tableName' 
+                WHERE TABLE_NAME = '$tableName'
+                AND TABLE_SCHEMA = '$schema'
             ");
-            $columnTypes = $columnTypesStmt->fetchAll(PDO::FETCH_ASSOC);
-            // $tableName = 'ugouv'.$tableName;
-            // dd($columnTypes);
+            $columnTypes = array_column($columnTypesStmt->fetchAllAssociative(), 'DATA_TYPE', 'COLUMN_NAME'); // Simplified column types
+    
             foreach ($data as $row) {
-                $columns = array_keys($row);
-                $placeholders = array_map(fn($col) => ':' . $col, $columns);
-
-                // Build the MERGE query for upsert
-                
-                $mergeSQL = sprintf(
-                    'MERGE INTO %s AS target
-                    USING (SELECT :id AS id) AS source
-                    ON (target.id = source.id)
-                    WHEN MATCHED THEN 
-                        UPDATE SET %s
-                    WHEN NOT MATCHED THEN 
-                        INSERT (%s) VALUES (%s);',
+                $columns = array_keys($row); // Extract column names
+                $placeholders = array_map(fn($col) => ':' . $col, $columns); // Create placeholders
+    
+                // Build the INSERT query
+                $insertSQL = sprintf(
+                    'INSERT INTO %s (%s) VALUES (%s);',
                     $tableNameSchema,
-                    implode(', ', array_map(fn($col) => "target.$col = :$col", $columns)),
                     implode(', ', $columns),
                     implode(', ', $placeholders)
                 );
-
-                // Prepare the statement for merge
-                $mergeStmt = $this->connection->prepare($mergeSQL);
-
-              
-                // dd($mergeStmt);
-
+    
+                // Prepare the INSERT statement
+                $insertStmt = $this->connection->prepare($insertSQL);
+    
+                // Bind parameters with correct PDO types
                 foreach ($row as $column => $value) {
-                    // Find the corresponding data type for the column
-                    $columnType = array_column($columnTypes, 'DATA_TYPE', 'COLUMN_NAME')[$column] ?? 'varchar';
+                    $columnType = $columnTypes[$column] ?? 'varchar'; // Default to varchar if type is not found
                     $pdoType = $this->getTypePDO($columnType);
-
-                    if ($pdoType === PDO::PARAM_INT) {
-                        $value = (int)$value; // Cast to integer
-                    } elseif ($pdoType === PDO::PARAM_BOOL) {
-                        $value = (bool)$value; // Cast to boolean
-                    } elseif ($pdoType === PDO::PARAM_STR) {
-                        $value = (string)$value; // Ensure it's a string
-                    } else {
-                        dd('error');
-                    }
-                 
-                    $mergeStmt->bindValue(':' . $column, $value, $pdoType);
+    
+                    // Bind the value with the correct PDO type
+                    $insertStmt->bindValue(':' . $column, $value, $pdoType);
                 }
-                  
-
-                
-                // Execute the query
-                $mergeStmt->executeStatement();
+    
+                // Execute the insert query
+                $insertStmt->executeStatement();
             }
-
+    
             // Commit the transaction
             $this->connection->commit();
-
-            // Re-enable foreign key checks
-            $this->connection->executeQuery('ALTER TABLE ' . $tableName . ' WITH CHECK CHECK CONSTRAINT ALL');
+    
+            // Re-enable foreign key constraints
+            $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+    
+            // Disable IDENTITY_INSERT after the insert is complete
+            $this->connection->executeQuery('SET IDENTITY_INSERT ' . $tableNameSchema . ' OFF');
         } catch (\Exception $e) {
             // Rollback transaction on failure
             $this->connection->rollBack();
-
-            // Re-enable foreign key checks
-            $this->connection->executeQuery('ALTER TABLE ' . $tableName . ' WITH CHECK CHECK CONSTRAINT ALL');
-
-            throw $e;
+    
+            // Re-enable foreign key checks in case of failure
+            $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+    
+            // Disable IDENTITY_INSERT in case of failure
+            $this->connection->executeQuery('SET IDENTITY_INSERT ' . $tableNameSchema . ' OFF');
+    
+            throw $e; // Re-throw the exception
         }
     }
 
+
+
+    // private function upsertDataIntoTable(array $data, string $tableName, string $schema): void
+    // {
+    //     $tableNameSchema = $schema . '.' . $tableName;
+    //     $this->connection->beginTransaction();
+
+    //     try {
+    //         // Temporarily disable foreign key checks
+    //         $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
+
+    //         // Retrieve column types from the information schema
+    //         $columnTypesStmt = $this->connection->executeQuery("
+    //             SELECT COLUMN_NAME, DATA_TYPE
+    //             FROM INFORMATION_SCHEMA.COLUMNS
+    //             WHERE TABLE_NAME = '$tableName'
+    //             AND TABLE_SCHEMA = '$schema'
+    //         ");
+    //         $columnTypes = $columnTypesStmt->fetchAllAssociative(PDO::FETCH_ASSOC);
+
+    //         foreach ($data as $row) {
+    //             $columns = array_keys($row);
+    //             $placeholders = array_map(fn($col) => ':' . $col, $columns);
+
+    //             // Build the MERGE query for upsert
+    //             $mergeSQL = sprintf(
+    //                 'MERGE INTO %s AS target
+    //                 USING (VALUES (:id)) AS source(id)
+    //                 ON (target.id = source.id)
+    //                 WHEN MATCHED THEN
+    //                     UPDATE SET %s
+    //                 WHEN NOT MATCHED THEN
+    //                     INSERT (%s) VALUES (%s);',
+    //                 $tableNameSchema,
+    //                 implode(', ', array_map(fn($col) => "target.$col = :$col", $columns)),
+    //                 implode(', ', $columns),
+    //                 implode(', ', $placeholders)
+    //             );
+
+    //             // Prepare the statement for merge
+    //             $mergeStmt = $this->connection->prepare($mergeSQL);
+    //             // dd($mergeSQL, $row);
+
+    //             // Bind parameters with correct PDO types
+    //             foreach ($row as $column => $value) {
+    //                 // Find the corresponding data type for the column
+    //                 $columnType = array_column($columnTypes, 'DATA_TYPE', 'COLUMN_NAME')[$column] ?? 'varchar';
+    //                 $pdoType = $this->getTypePDO($columnType);
+
+    //                 if ($pdoType === PDO::PARAM_INT) {
+    //                     $value = (int)$value; // Cast to integer
+    //                 } elseif ($pdoType === PDO::PARAM_BOOL) {
+    //                     $value = (bool)$value; // Cast to boolean
+    //                 } elseif ($pdoType === PDO::PARAM_STR) {
+    //                     $value = (string)$value; // Ensure it's a string
+    //                 }
+    //                 dd($column, $value, $pdoType);
+
+    //                 // Bind the value with the correct PDO type
+    //                 $mergeStmt->bindValue(':' . $column, $value, $pdoType);
+    //             }
+
+    //             // Execute the query
+    //             $mergeStmt->executeStatement();
+    //         }
+
+    //         // Commit the transaction
+    //         $this->connection->commit();
+
+    //         // Re-enable foreign key checks
+    //         $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+    //     } catch (\Exception $e) {
+    //         // Rollback transaction on failure
+    //         $this->connection->rollBack();
+
+    //         // Re-enable foreign key checks
+    //         $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+
+    //         throw $e;
+    //     }
+    // }
+
+
     public function getTypePDO($type) {
         $typeMap = [
-            // Integer types
             'int' => PDO::PARAM_INT,
             'bigint' => PDO::PARAM_INT,
             'smallint' => PDO::PARAM_INT,
             'tinyint' => PDO::PARAM_INT,
-        
-            // Decimal and Numeric types
             'decimal' => PDO::PARAM_STR,
             'numeric' => PDO::PARAM_STR,
             'money' => PDO::PARAM_STR,
             'smallmoney' => PDO::PARAM_STR,
-        
-            // Floating-point types
             'float' => PDO::PARAM_STR,
             'real' => PDO::PARAM_STR,
-        
-            // String types
             'varchar' => PDO::PARAM_STR,
             'nvarchar' => PDO::PARAM_STR,
             'char' => PDO::PARAM_STR,
@@ -254,68 +318,25 @@ class SynchronisationCommand extends Command
             'text' => PDO::PARAM_STR,
             'ntext' => PDO::PARAM_STR,
             'xml' => PDO::PARAM_STR,
-        
-            // Date and time types
             'date' => PDO::PARAM_STR,
             'datetime' => PDO::PARAM_STR,
             'datetime2' => PDO::PARAM_STR,
             'smalldatetime' => PDO::PARAM_STR,
             'time' => PDO::PARAM_STR,
             'timestamp' => PDO::PARAM_STR,
-        
-            // Boolean types
             'bit' => PDO::PARAM_BOOL,
-        
-            // Binary types
             'binary' => PDO::PARAM_LOB,
             'varbinary' => PDO::PARAM_LOB,
             'image' => PDO::PARAM_LOB,
-        
-            // Unique identifier
             'uniqueidentifier' => PDO::PARAM_STR,
-        
-            // JSON
-            'json' => PDO::PARAM_STR
+            'json' => PDO::PARAM_STR,
         ];
-
-        return $typeMap[$type];
+    
+        // Default to string type if the type is not recognized
+        return $typeMap[$type] ?? PDO::PARAM_STR;
     }
+    
 
 
-    // Method to handle inserting or updating data in the local database
-    // private function upsertDataIntoTable(array $data, string $tableName): void
-    // {
-    //     $this->connection->beginTransaction();
 
-    //     try {
-    //         $this->connection->executeQuery('SET foreign_key_checks = 0');
-
-    //         foreach ($data as $row) {
-    //             $columns = array_keys($row);
-
-    //             $sql = sprintf(
-    //                 'INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s',
-    //                 $tableName,
-    //                 implode(',', $columns),
-    //                 implode(',', array_map(fn($col) => ':' . $col, $columns)),
-    //                 implode(',', array_map(fn($col) => "$col = VALUES($col)", $columns))
-    //             );
-
-    //             $stmt = $this->connection->prepare($sql);
-
-    //             foreach ($row as $column => $value) {
-    //                 $stmt->bindValue(':' . $column, $value);
-    //             }
-
-    //             $stmt->executeQuery();
-    //         }
-
-    //         $this->connection->commit();
-    //         $this->connection->executeQuery('SET foreign_key_checks = 1');
-    //     } catch (\Exception $e) {
-    //         $this->connection->rollBack();
-    //         $this->connection->executeQuery('SET foreign_key_checks = 1');
-    //         throw $e;
-    //     }
-    // }
 }
