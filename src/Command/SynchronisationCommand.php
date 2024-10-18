@@ -58,7 +58,7 @@ class SynchronisationCommand extends Command
 
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
-                $tableName = 'ua_t_commandefrscab';
+                // $tableName = 'ua_t_commandefrscab';
 
                 // Fetch unsynchronized data from API
                 $response = $this->httpClient->request('POST', $ugouvApi . '/api/local/data', [
@@ -114,30 +114,56 @@ class SynchronisationCommand extends Command
     {
         $tableNameSchema = "ugouv" . '.' . $tableName;
         $this->connection->beginTransaction();
-
+    
         try {
             // Disable foreign key checks
             $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
-
+    
             foreach ($data as $row) {
                 $columns = array_keys($row);
+                $primaryKey = 'id'; // Assuming 'id' is the primary key
+    
+                // Check if the record already exists
+                $existsQuery = $this->connection->createQueryBuilder()
+                    ->select($primaryKey)
+                    ->from($tableNameSchema)
+                    ->where("$primaryKey = :id")
+                    ->setParameter('id', $row[$primaryKey])
+                    ->executeQuery()
+                    ->fetchOne();
+    
+                if ($existsQuery) {
+                    // Update the record if it exists
+                    $qb = $this->connection->createQueryBuilder();
+                    $qb->update($tableNameSchema);
+    
+                    // Add columns and values for the update query
+                    foreach ($columns as $column) {
+                        if ($column !== $primaryKey) {
+                            $qb->set($column, ':' . $column);
+                            $qb->setParameter($column, $row[$column]);
+                        }
+                    }
+    
+                    $qb->where("$primaryKey = :id")
+                       ->setParameter('id', $row[$primaryKey]);
+    
+                    // Execute the update query
+                    $qb->executeStatement();
+                } else {
+                    // Insert the record if it doesn't exist
+                    $qb = $this->connection->createQueryBuilder();
+                    $qb->insert($tableNameSchema);
 
-                // Build insert query
-                $qb = $this->connection->createQueryBuilder();
-                $qb->insert($tableNameSchema);
+                    // Add columns and values for the insert query
+                    foreach ($columns as $column) {
+                        $qb->setValue($column, ':' . $column);
+                        $qb->setParameter($column, $row[$column]);
+                    }
 
-                // Add columns and values
-                foreach ($columns as $column) {
-                    $qb->setValue($column, ':' . $column);
+                    // Execute the insert query
+                    $qb->executeStatement();
                 }
-
-                // Bind parameters
-                foreach ($row as $column => $value) {
-                    $qb->setParameter($column, $value);
-                }
-
-                // Execute the query
-                $qb->executeStatement();
             }
 
             // Re-enable foreign key constraints
