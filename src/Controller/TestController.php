@@ -129,3 +129,70 @@ class TestController extends AbstractController
 //         return Command::SUCCESS;
 //     }
 // }
+
+
+//     private function upsertDataIntoTable(array $data, string $tableName): void
+//     {
+//         $tableNameSchema = "ugouv" . '.' . $tableName;
+//         $this->connection->beginTransaction();
+//
+//         try {
+//             // Disable foreign key checks
+//             $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
+//
+//             foreach ($data as $row) {
+//                 $columns = array_keys($row);
+//                 $primaryKey = 'id'; // Assuming 'id' is the primary key
+//
+//                 // Check if the record already exists
+//                 $existsQuery = $this->connection->createQueryBuilder()
+//                     ->select($primaryKey)
+//                     ->from($tableNameSchema)
+//                     ->where("$primaryKey = :id")
+//                     ->setParameter('id', $row[$primaryKey])
+//                     ->executeQuery()
+//                     ->fetchOne();
+//
+//                 if ($existsQuery) {
+//                     // Update the record if it exists
+//                     $qb = $this->connection->createQueryBuilder();
+//                     $qb->update($tableNameSchema);
+//
+//                     // Add columns and values for the update query
+//                     foreach ($columns as $column) {
+//                         if ($column !== $primaryKey) {
+//                             $qb->set($column, ':' . $column);
+//                             $qb->setParameter($column, $row[$column]);
+//                         }
+//                     }
+//
+//                     $qb->where("$primaryKey = :id")
+//                        ->setParameter('id', $row[$primaryKey]);
+//
+//                     // Execute the update query
+//                     $qb->executeStatement();
+//                 } else {
+//                     // Insert the record if it doesn't exist
+//                     $qb = $this->connection->createQueryBuilder();
+//                     $qb->insert($tableNameSchema);
+//                     // Add columns and values for the insert query
+//                     foreach ($columns as $column) {
+//                         $qb->setValue($column, ':' . $column);
+//                         $qb->setParameter($column, $row[$column]);
+//                     }
+//
+//                     // Execute the insert query
+//                     $qb->executeStatement();
+//                 }
+//             }
+//
+//             // Re-enable foreign key constraints
+//             // $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+//             $this->connection->commit();
+//
+//         } catch (\Exception $e) {
+//             $this->connection->rollBack();
+//             // $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' WITH CHECK CHECK CONSTRAINT ALL');
+//             throw $e; // Re-throw the exception
+//         }
+//     }

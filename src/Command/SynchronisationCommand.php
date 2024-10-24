@@ -37,7 +37,7 @@ class SynchronisationCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('synchronisation_info', 'Tbl_Example')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('synchronisation_info')"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
