@@ -38,11 +38,10 @@ class InsertExampleCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('synchronisation_info','messenger_messages','doctrine_migration_versions','sysdiagrams', 'uv_commandecab', 't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab', 'ua_t_livraisonfrscab')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('synchronisation_info','messenger_messages','umouvement_antenne_old','u_general_operation','ua_t_commandefrsdet','doctrine_migration_versions','sysdiagrams', 'devis_technique_cab','uv_commandecab','ua_technique_det', 't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab', 'ua_t_livraisonfrscab')"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
-//        , 'uv_commandecab'
         return $result->fetchAllAssociative();
     }
 
@@ -81,7 +80,7 @@ class InsertExampleCommand extends Command
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
 //                $tableName = $table;
-//                $tableName = 'univ_p_statut';
+//                $tableName = 'pcounter';
 
 
                 $output->writeln("Processing table $tableName");
@@ -91,7 +90,7 @@ class InsertExampleCommand extends Command
                     try {
                         // Fetch unsynchronized data from API with retry logic
                         $response = $this->retryHttpRequest('POST', $ugouvApi . '/api/local/data', [
-                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 1"],
+                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 100"],
                             'verify_peer' => false,
                             'verify_host' => false,
                         ]);
