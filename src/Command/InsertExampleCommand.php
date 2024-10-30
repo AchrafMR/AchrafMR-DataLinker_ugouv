@@ -38,7 +38,7 @@ class InsertExampleCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('synchronisation_info', 'uv_commandecab', 't_achatdemandeinternedet','ua_t_facturefrsdet')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('synchronisation_info','messenger_messages','doctrine_migration_versions','sysdiagrams', 'uv_commandecab', 't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab', 'ua_t_livraisonfrscab')"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
@@ -76,10 +76,13 @@ class InsertExampleCommand extends Command
 
             $ugouvApi = $this->container->getParameter('ugouv_api');
             $tables = $this->getAllTableNames();
-
+//            $tables = ['univ_p_statut'];
+//            $compositeKey=[];
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
-//                $tableName = 'articles';
+//                $tableName = $table;
+//                $tableName = 'univ_p_statut';
+
 
                 $output->writeln("Processing table $tableName");
 
@@ -88,13 +91,12 @@ class InsertExampleCommand extends Command
                     try {
                         // Fetch unsynchronized data from API with retry logic
                         $response = $this->retryHttpRequest('POST', $ugouvApi . '/api/local/data', [
-                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 100"],
+                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 1"],
                             'verify_peer' => false,
                             'verify_host' => false,
                         ]);
 
                         $data = $response->toArray();
-
                         if (!empty($data)) {
                             // Check if table has 'id' column or use primary key(s)
                             $primaryKey = $this->getIdOrPrimaryKey($tableName);
@@ -156,6 +158,8 @@ class InsertExampleCommand extends Command
                         }
 
                     } catch (\Exception $e) {
+//                        dd($compositeKey);
+
                         $output->writeln('Error with table ' . $tableName . ': ' . $e->getMessage());
                         break; // Break the loop for this table if an error occurs
                     }
@@ -252,7 +256,7 @@ class InsertExampleCommand extends Command
         $tableNameSchema = "ugouv" . '.' . $tableName;
         $this->connection->beginTransaction();
 //dd($data);
-        $lign = [];
+//        $lign = [];
         try {
             // Disable foreign key checks
             $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
