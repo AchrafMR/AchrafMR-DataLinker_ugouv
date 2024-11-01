@@ -38,7 +38,14 @@ class InsertExampleCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('synchronisation_info','messenger_messages','umouvement_antenne_old','u_general_operation','ua_t_commandefrsdet','doctrine_migration_versions','sysdiagrams', 'devis_technique_cab','uv_commandecab','ua_technique_det', 't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab', 'ua_t_livraisonfrscab')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','umouvement_antenne_old','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions',
+                                    'u_general_operation','ua_t_commandefrsdet', 'devis_technique_cab','uv_commandecab','ua_technique_det', 
+                                    't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab',
+                                    'ua_t_livraisonfrscab','devis_technique_det','uv_livraisoncab','ua_t_facturefrscab','article_old','ecriture_cab','s_livraisonfrsdet','sheet1',
+                                    'tr_operations_transactions','tr_transaction','gaccentryd','uv_devisdet','uarticle','t_achatdemandeinternecab','ecriture_det','uv_facturecab',
+                                    'ua_t_commandefrscab','enni_fac_lettrage','uv_commandedet','us_groupe_permission','uv_livraisondet','ua_t_livraisonfrsdet','uv_deviscab','usersignaturedoc',
+                                    'ua_t_livraisonfrsdet_old','gaccentry'
+                                    )"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
@@ -77,20 +84,21 @@ class InsertExampleCommand extends Command
             $tables = $this->getAllTableNames();
 //            $tables = ['univ_p_statut'];
 //            $compositeKey=[];
+            $tableCount = 1;
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
 //                $tableName = $table;
-//                $tableName = 'pcounter';
+//                $tableName = 'avance';
 
-
-                $output->writeln("Processing table $tableName");
-
+                $output->writeln("$tableCount Processing table: $tableName");
+                $tableCount++;
                 $moreData = true;
+                $limit =200;
                 while ($moreData) {
                     try {
                         // Fetch unsynchronized data from API with retry logic
                         $response = $this->retryHttpRequest('POST', $ugouvApi . '/api/local/data', [
-                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 100"],
+                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT $limit"],
                             'verify_peer' => false,
                             'verify_host' => false,
                         ]);
@@ -131,9 +139,8 @@ class InsertExampleCommand extends Command
                                 $columnIds = array_column($data, $primaryKey);
                             }
 //                            dd($primaryKey);
-
 //                            $columnIdsString = implode(', ', $columnIds);
-//                            dd($columnIds);//
+//                            dd($columnIds);
 
                             // Perform upsert operation
                             $this->upsertDataIntoTable($data, $tableName, $primaryKey);
@@ -157,9 +164,10 @@ class InsertExampleCommand extends Command
                         }
 
                     } catch (\Exception $e) {
-//                        dd($compositeKey);
+        //                        dd($compositeKey);
 
                         $output->writeln('Error with table ' . $tableName . ': ' . $e->getMessage());
+                        $this->updateSyncInfo($synchronisation, 'error in Table ' . $tableName , $e->getMessage());
                         break; // Break the loop for this table if an error occurs
                     }
 
@@ -184,11 +192,13 @@ class InsertExampleCommand extends Command
      */
     private function getIdOrPrimaryKey(string $tableName): ?array
     {
+        // Define the condition to check for both lowercase 'id' and uppercase 'ID'
+        $idCondition = "(COLUMN_NAME = 'id' OR COLUMN_NAME = 'ID')";
         // Query to check if the 'id' column exists
-        $sql = "SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = '$tableName' 
-            AND COLUMN_NAME = 'id' 
+        $sql = "SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = '$tableName'
+            AND $idCondition
             AND TABLE_SCHEMA = 'ugouv';";  // Adjust the schema name if needed
 
         // Execute the query
@@ -197,12 +207,12 @@ class InsertExampleCommand extends Command
 
         // Fetch a single result (returns the first column value or false if not found)
         $idColumn = $result->fetchOne();
-//dd($idColumn);
+        //dd($idColumn);
         // Check if 'id' column exists
         if ($idColumn) {
-            return ['id'];  // Return 'id' as an array for consistency in return type
+            return [$idColumn];  // Return the found column name ('id' or 'ID') as an array
         }
-//dd("hello");
+        //dd("hello");
 
         // If 'id' does not exist, fetch the primary key(s)
         $primaryKeys = $this->getPrimaryKeys($tableName);
@@ -254,7 +264,7 @@ class InsertExampleCommand extends Command
     {
         $tableNameSchema = "ugouv" . '.' . $tableName;
         $this->connection->beginTransaction();
-//dd($data);
+//        dd($data);
 //        $lign = [];
         try {
             // Disable foreign key checks
@@ -316,7 +326,7 @@ class InsertExampleCommand extends Command
 
         } catch (\Exception $e) {
 //            dd($e->getMessage());
-//    dd($lign);
+//            dd($lign);
             $this->connection->rollBack();
             throw $e;
         }
@@ -388,7 +398,12 @@ class InsertExampleCommand extends Command
         $qb->insert($tableNameSchema);
 
         foreach ($row as $column => $value) {
-            $qb->setValue($column, '?');
+            if($column != 'user' && $column != 'public'){
+                $qb->setValue($column, '?');
+            }
+            else{
+                $qb->setValue('['.$column.']', '?');
+            }
             $qb->setParameter(count($qb->getParameters()), $value);
         }
 
