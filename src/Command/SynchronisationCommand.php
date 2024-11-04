@@ -20,12 +20,7 @@ class SynchronisationCommand extends Command
     private $entityManager;
     private ContainerInterface $container;
 
-    public function __construct(
-        HttpClientInterface    $httpClient,
-        EntityManagerInterface $entityManager,
-        Connection             $connection,
-        ContainerInterface     $container
-    )
+    public function __construct(HttpClientInterface    $httpClient, EntityManagerInterface $entityManager,Connection  $connection, ContainerInterface $container)
     {
         parent::__construct();
         $this->httpClient = $httpClient;
@@ -38,11 +33,16 @@ class SynchronisationCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('synchronisation_info', 'uv_commandecab', 't_achatdemandeinternedet','ua_t_facturefrsdet')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('fac_hosix','fac_hosix1','sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','umouvement_antenne_old','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions',
+                                    'u_general_operation','ua_t_commandefrsdet', 'devis_technique_cab','uv_commandecab','ua_technique_det', 
+                                    'ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab',
+                                    'devis_technique_det','uv_livraisoncab','ua_t_facturefrscab','article_old','ecriture_cab','s_livraisonfrsdet','sheet1',
+                                    'tr_operations_transactions','tr_transaction','gaccentryd','uv_devisdet','uarticle','t_achatdemandeinternecab','ecriture_det','uv_facturecab',
+                                    'ua_t_commandefrscab','t_achatdemandeinternedet','enni_fac_lettrage','uv_commandedet','us_groupe_permission','uv_livraisondet','ua_t_livraisonfrsdet','uv_deviscab','usersignaturedoc',
+                                    'ua_t_livraisonfrsdet_old','gaccentry')"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
-//        , 'uv_commandecab'
         return $result->fetchAllAssociative();
     }
 
@@ -77,24 +77,26 @@ class SynchronisationCommand extends Command
             $ugouvApi = $this->container->getParameter('ugouv_api');
             $tables = $this->getAllTableNames();
 
+            $tableCount = 1;
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
-//                $tableName = 'articles';
+//                $tableName = $table;
+//                $tableName = '_biomed_14_09_22';
 
-                $output->writeln("Processing table $tableName");
-
+                $output->writeln("$tableCount Processing table: $tableName");
+                $tableCount++;
                 $moreData = true;
+                $limit =200;
                 while ($moreData) {
                     try {
                         // Fetch unsynchronized data from API with retry logic
                         $response = $this->retryHttpRequest('POST', $ugouvApi . '/api/local/data', [
-                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT 100"],
+                            'body' => ['requete' => "SELECT * FROM $tableName WHERE flag_synchronisation_locale = 0 OR flag_synchronisation_locale IS NULL LIMIT $limit"],
                             'verify_peer' => false,
                             'verify_host' => false,
                         ]);
 
                         $data = $response->toArray();
-
                         if (!empty($data)) {
                             // Check if table has 'id' column or use primary key(s)
                             $primaryKey = $this->getIdOrPrimaryKey($tableName);
@@ -121,7 +123,7 @@ class SynchronisationCommand extends Command
                                     }
 
                                     // Concatenate composite key values with a separator (e.g., a dash or comma)
-                                    $columnIds[] = implode('-', $compositeKey);  // You can use a different separator if needed
+                                    $columnIds[] = implode('-', $compositeKey);
                                 }
 
 
@@ -130,9 +132,8 @@ class SynchronisationCommand extends Command
                                 $columnIds = array_column($data, $primaryKey);
                             }
 //                            dd($primaryKey);
-
 //                            $columnIdsString = implode(', ', $columnIds);
-//                            dd($columnIds);//
+//                            dd($columnIds);
 
                             // Perform upsert operation
                             $this->upsertDataIntoTable($data, $tableName, $primaryKey);
@@ -156,10 +157,18 @@ class SynchronisationCommand extends Command
                         }
 
                     } catch (\Exception $e) {
+                        // Capture the table name, row (if available), and error message
                         $output->writeln('Error with table ' . $tableName . ': ' . $e->getMessage());
-                        break; // Break the loop for this table if an error occurs
-                    }
 
+                        // Log the error and store it in the synchronization record
+                        $this->updateSyncInfo(
+                            $synchronisation,
+                            'error in Table ' . $tableName,
+                            $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
+                        );
+                        break; // Break the loop for this table if an error occurs
+
+                    }
                     // Free memory and force garbage collection after each iteration
                     gc_collect_cycles();
                 }
@@ -171,7 +180,14 @@ class SynchronisationCommand extends Command
 
         } catch (\Exception $e) {
             $output->writeln('An error occurred: ' . $e->getMessage());
-            $this->updateSyncInfo($synchronisation, 'error', $e->getMessage());
+
+            // Log the error to SynchronisationInfo
+            $this->updateSyncInfo(
+                $synchronisation,
+                'error',
+                $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
+            );
+
             return 1; // Failure
         }
     }
@@ -181,11 +197,13 @@ class SynchronisationCommand extends Command
      */
     private function getIdOrPrimaryKey(string $tableName): ?array
     {
+        // Define the condition to check for both lowercase 'id' and uppercase 'ID'
+        $idCondition = "(COLUMN_NAME = 'id' OR COLUMN_NAME = 'ID')";
         // Query to check if the 'id' column exists
-        $sql = "SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = '$tableName' 
-            AND COLUMN_NAME = 'id' 
+        $sql = "SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = '$tableName'
+            AND $idCondition
             AND TABLE_SCHEMA = 'ugouv';";  // Adjust the schema name if needed
 
         // Execute the query
@@ -194,14 +212,14 @@ class SynchronisationCommand extends Command
 
         // Fetch a single result (returns the first column value or false if not found)
         $idColumn = $result->fetchOne();
-//dd($idColumn);
+        //dd($idColumn);
         // Check if 'id' column exists
         if ($idColumn) {
-            return ['id'];  // Return 'id' as an array for consistency in return type
+            return [$idColumn];  // Return the found column name ('id' or 'ID') as an array
         }
-//dd("hello");
+        //dd("hello");
 
-        // If 'id' does not exist, fetch the primary key(s)
+        // If 'id' does not exist, fetch the primary key
         $primaryKeys = $this->getPrimaryKeys($tableName);
         // If the table has one or more primary keys, return them
         if (count($primaryKeys) > 0) {
@@ -212,8 +230,6 @@ class SynchronisationCommand extends Command
         // If no primary keys found, return null
         return null;
     }
-
-
 
     /**
      * Get the primary key(s) of a table.
@@ -251,8 +267,8 @@ class SynchronisationCommand extends Command
     {
         $tableNameSchema = "ugouv" . '.' . $tableName;
         $this->connection->beginTransaction();
-//dd($data);
-        $lign = [];
+//        dd($data);
+//        $lign = [];
         try {
             // Disable foreign key checks
             $this->connection->executeQuery('ALTER TABLE ' . $tableNameSchema . ' NOCHECK CONSTRAINT ALL');
@@ -313,7 +329,7 @@ class SynchronisationCommand extends Command
 
         } catch (\Exception $e) {
 //            dd($e->getMessage());
-//    dd($lign);
+//            dd($lign);
             $this->connection->rollBack();
             throw $e;
         }
@@ -350,7 +366,7 @@ class SynchronisationCommand extends Command
 
         // Set all columns except for the primary key(s)
         foreach ($row as $column => $value) {
-            // Skip the primary key column(s) in the SET part of the SQL query
+            // Skip the primary key columnn in the SET part of the SQL query
             if (!in_array($column, array_column($primaryKey, 'ColumnName')) && !in_array($column, $primaryKey)) {
                 $qb->set($column, '?');
                 $qb->setParameter(count($qb->getParameters()), $value);
@@ -385,7 +401,12 @@ class SynchronisationCommand extends Command
         $qb->insert($tableNameSchema);
 
         foreach ($row as $column => $value) {
-            $qb->setValue($column, '?');
+            if($column != 'user' && $column != 'public'){
+                $qb->setValue($column, '?');
+            }
+            else{
+                $qb->setValue('['.$column.']', '?');
+            }
             $qb->setParameter(count($qb->getParameters()), $value);
         }
 

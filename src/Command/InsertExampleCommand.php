@@ -371,7 +371,7 @@ class InsertExampleCommand extends Command
 
         // Set all columns except for the primary key(s)
         foreach ($row as $column => $value) {
-            // Skip the primary key column(s) in the SET part of the SQL query
+            // Skip the primary key columnn in the SET part of the SQL query
             if (!in_array($column, array_column($primaryKey, 'ColumnName')) && !in_array($column, $primaryKey)) {
                 $qb->set($column, '?');
                 $qb->setParameter(count($qb->getParameters()), $value);
