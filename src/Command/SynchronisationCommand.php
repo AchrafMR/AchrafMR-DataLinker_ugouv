@@ -33,13 +33,8 @@ class SynchronisationCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('fac_hosix','fac_hosix1','sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','umouvement_antenne_old','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions',
-                                    'u_general_operation','ua_t_commandefrsdet', 'devis_technique_cab','uv_commandecab','ua_technique_det', 
-                                    'ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab',
-                                    'devis_technique_det','uv_livraisoncab','ua_t_facturefrscab','article_old','ecriture_cab','s_livraisonfrsdet','sheet1',
-                                    'tr_operations_transactions','tr_transaction','gaccentryd','uv_devisdet','uarticle','t_achatdemandeinternecab','ecriture_det','uv_facturecab',
-                                    'ua_t_commandefrscab','t_achatdemandeinternedet','enni_fac_lettrage','uv_commandedet','us_groupe_permission','uv_livraisondet','ua_t_livraisonfrsdet','uv_deviscab','usersignaturedoc',
-                                    'ua_t_livraisonfrsdet_old','gaccentry')"; // Exclude these tables
+                AND TABLE_NAME NOT IN ('sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions','umouvement_antenne_'
+                                      )"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
