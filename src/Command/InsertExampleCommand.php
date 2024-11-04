@@ -38,14 +38,13 @@ class InsertExampleCommand extends Command
     {
         $sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME NOT IN ('sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','umouvement_antenne_old','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions',
+                AND TABLE_NAME NOT IN ('fac_hosix','fac_hosix1','sysdiagrams','user_created_id','_biomed','_biomed_14_09_22','umouvement_antenne_old','_biomed_14_09_22_(2)','_biomed_15_09_22_mod','synchronisation_info','messenger_messages','doctrine_migration_versions',
                                     'u_general_operation','ua_t_commandefrsdet', 'devis_technique_cab','uv_commandecab','ua_technique_det', 
-                                    't_achatdemandeinternedet','ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab',
-                                    'ua_t_livraisonfrscab','devis_technique_det','uv_livraisoncab','ua_t_facturefrscab','article_old','ecriture_cab','s_livraisonfrsdet','sheet1',
+                                    'ua_t_facturefrsdet', 'umouvement_antenne','demande_stock_det', 'uv_facturedet', 'umouvement_antenne_', 'ua_technique_cab',
+                                    'devis_technique_det','uv_livraisoncab','ua_t_facturefrscab','article_old','ecriture_cab','s_livraisonfrsdet','sheet1',
                                     'tr_operations_transactions','tr_transaction','gaccentryd','uv_devisdet','uarticle','t_achatdemandeinternecab','ecriture_det','uv_facturecab',
-                                    'ua_t_commandefrscab','enni_fac_lettrage','uv_commandedet','us_groupe_permission','uv_livraisondet','ua_t_livraisonfrsdet','uv_deviscab','usersignaturedoc',
-                                    'ua_t_livraisonfrsdet_old','gaccentry'
-                                    )"; // Exclude these tables
+                                    'ua_t_commandefrscab','t_achatdemandeinternedet','enni_fac_lettrage','uv_commandedet','us_groupe_permission','uv_livraisondet','ua_t_livraisonfrsdet','uv_deviscab','usersignaturedoc',
+                                    'ua_t_livraisonfrsdet_old','gaccentry')"; // Exclude these tables
 
         $stmt = $this->connection->prepare($sql);
         $result = $stmt->executeQuery();
@@ -82,13 +81,12 @@ class InsertExampleCommand extends Command
 
             $ugouvApi = $this->container->getParameter('ugouv_api');
             $tables = $this->getAllTableNames();
-//            $tables = ['univ_p_statut'];
-//            $compositeKey=[];
+
             $tableCount = 1;
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
 //                $tableName = $table;
-//                $tableName = 'avance';
+//                $tableName = '_biomed_14_09_22';
 
                 $output->writeln("$tableCount Processing table: $tableName");
                 $tableCount++;
@@ -130,7 +128,7 @@ class InsertExampleCommand extends Command
                                     }
 
                                     // Concatenate composite key values with a separator (e.g., a dash or comma)
-                                    $columnIds[] = implode('-', $compositeKey);  // You can use a different separator if needed
+                                    $columnIds[] = implode('-', $compositeKey);
                                 }
 
 
@@ -164,13 +162,18 @@ class InsertExampleCommand extends Command
                         }
 
                     } catch (\Exception $e) {
-        //                        dd($compositeKey);
-
+                        // Capture the table name, row (if available), and error message
                         $output->writeln('Error with table ' . $tableName . ': ' . $e->getMessage());
-                        $this->updateSyncInfo($synchronisation, 'error in Table ' . $tableName , $e->getMessage());
-                        break; // Break the loop for this table if an error occurs
-                    }
 
+                        // Log the error and store it in the synchronization record
+                        $this->updateSyncInfo(
+                            $synchronisation,
+                            'error in Table ' . $tableName,
+                            $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
+                        );
+                        break; // Break the loop for this table if an error occurs
+
+                    }
                     // Free memory and force garbage collection after each iteration
                     gc_collect_cycles();
                 }
@@ -182,7 +185,14 @@ class InsertExampleCommand extends Command
 
         } catch (\Exception $e) {
             $output->writeln('An error occurred: ' . $e->getMessage());
-            $this->updateSyncInfo($synchronisation, 'error', $e->getMessage());
+
+            // Log the error to SynchronisationInfo
+            $this->updateSyncInfo(
+                $synchronisation,
+                'error',
+                $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
+            );
+
             return 1; // Failure
         }
     }
@@ -214,7 +224,7 @@ class InsertExampleCommand extends Command
         }
         //dd("hello");
 
-        // If 'id' does not exist, fetch the primary key(s)
+        // If 'id' does not exist, fetch the primary key
         $primaryKeys = $this->getPrimaryKeys($tableName);
         // If the table has one or more primary keys, return them
         if (count($primaryKeys) > 0) {
@@ -225,8 +235,6 @@ class InsertExampleCommand extends Command
         // If no primary keys found, return null
         return null;
     }
-
-
 
     /**
      * Get the primary key(s) of a table.
