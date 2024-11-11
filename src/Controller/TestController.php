@@ -22,7 +22,7 @@ class TestController extends AbstractController
         // SQL query to fetch all base table names excluding 'synchronisation_info'
         $sql = "SELECT TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_NAME != 'synchronisation_info' AND TABLE_NAME != 'Tbl_Example'";
+                AND TABLE_SCHEMA = 'ugouv'";
 
         // Prepare and execute the query
         $stmt = $this->connection->prepare($sql);

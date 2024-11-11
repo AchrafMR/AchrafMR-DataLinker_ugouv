@@ -10,12 +10,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 class InsertExampleCommand extends Command
 {
     protected static $defaultName = 'app:insert-example';
 
     private $connection;
+    private $logger;
     private $httpClient;
     private $entityManager;
     private ContainerInterface $container;
@@ -24,7 +26,8 @@ class InsertExampleCommand extends Command
         HttpClientInterface    $httpClient,
         EntityManagerInterface $entityManager,
         Connection             $connection,
-        ContainerInterface     $container
+        ContainerInterface     $container,
+        LoggerInterface        $logger
     )
     {
         parent::__construct();
@@ -32,6 +35,7 @@ class InsertExampleCommand extends Command
         $this->entityManager = $entityManager;
         $this->connection = $connection;
         $this->container = $container;
+        $this->logger = $logger;
     }
 
     private function getAllTableNames(): array
@@ -61,8 +65,8 @@ class InsertExampleCommand extends Command
                     return $response;
                 }
             } catch (\Exception $e) {
-                // Log the exception and retry
-                echo "HTTP request failed: " . $e->getMessage();
+                // Log the exception and retry without echoing it to the terminal
+                $this->logger->error("HTTP request failed: " . $e->getMessage());
             }
             $attempt++;
             usleep($delay * 1000); // Delay in milliseconds before retrying
@@ -86,7 +90,7 @@ class InsertExampleCommand extends Command
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
 //                $tableName = $table;
-//                $tableName = '_biomed_14_09_22';
+                $tableName = 't_achatdemandeinternecab';
 
                 $output->writeln("$tableCount Processing table: $tableName");
                 $tableCount++;
@@ -163,7 +167,7 @@ class InsertExampleCommand extends Command
 
                     } catch (\Exception $e) {
                         // Capture the table name, row (if available), and error message
-                        $output->writeln('Error with table ' . $tableName . ': ' . $e->getMessage());
+                        $this->logger->error('Error with table ' . $tableName . ': ' . $e->getMessage());
 
                         // Log the error and store it in the synchronization record
                         $this->updateSyncInfo(
@@ -184,7 +188,7 @@ class InsertExampleCommand extends Command
             return 0; // Success
 
         } catch (\Exception $e) {
-            $output->writeln('An error occurred: ' . $e->getMessage());
+            $this->logger->error('An error occurred: ' . $e->getMessage());
 
             // Log the error to SynchronisationInfo
             $this->updateSyncInfo(
@@ -339,14 +343,27 @@ class InsertExampleCommand extends Command
             throw $e;
         }
     }
-
-    private function validateDate($date): bool
+    private function validateDate($date, $format = 'Y-m-d H:i:s'): bool
     {
+        // Check if the date is null or empty
         if ($date === null || $date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
-            return false; // Consider null, empty, '0000-00-00', or '0000-00-00 00:00:00' as invalid
+            return false; // Consider null, empty, or '0000-00-00' as invalid
         }
-        return (bool)strtotime($date);
+
+        // Create a DateTime object from the provided date
+        $d = \DateTime::createFromFormat($format, $date);
+
+        // Return true if the date is valid and matches the given format, otherwise return false
+        return $d && $d->format($format) === $date;
     }
+
+//    private function validateDate($date): bool
+//    {
+//        if ($date === null || $date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+//            return false; // Consider null, empty, '0000-00-00', or '0000-00-00 00:00:00' as invalid
+//        }
+//        return (bool)strtotime($date);
+//    }
 
     private function getColumnTypes(string $tableName, string $schema): array
     {

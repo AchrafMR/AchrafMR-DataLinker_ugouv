@@ -76,7 +76,7 @@ class SynchronisationCommand extends Command
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
 //                $tableName = $table;
-//                $tableName = '_biomed_14_09_22';
+                $tableName = 't_achatdemandeinternecab';
 
                 $output->writeln("$tableCount Processing table: $tableName");
                 $tableCount++;
@@ -330,12 +330,18 @@ class SynchronisationCommand extends Command
         }
     }
 
-    private function validateDate($date): bool
+    private function validateDate($date, $format = 'Y-m-d H:i:s'): bool
     {
+        // Check if the date is null or empty
         if ($date === null || $date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
-            return false; // Consider null, empty, '0000-00-00', or '0000-00-00 00:00:00' as invalid
+            return false; // Consider null, empty, or '0000-00-00' as invalid
         }
-        return (bool)strtotime($date);
+
+        // Create a DateTime object from the provided date
+        $d = \DateTime::createFromFormat($format, $date);
+
+        // Return true if the date is valid and matches the given format, otherwise return false
+        return $d && $d->format($format) === $date;
     }
 
     private function getColumnTypes(string $tableName, string $schema): array

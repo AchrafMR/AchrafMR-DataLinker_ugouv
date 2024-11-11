@@ -1,5 +1,6 @@
 doctrine:
     dbal:
+        default_connection: default
         connections:
             default:
                 url: '%env(resolve:DATABASE_URL)%'
@@ -7,27 +8,36 @@ doctrine:
                 charset: UTF-8
                 options:
                     TrustServerCertificate: yes
-                # Uncomment and specify server version if needed
-                # server_version: '13'
+            ugouv:
+                url: '%env(resolve:DATABASE_URL_UGOUV)%'
+                driver: 'pdo_mysql'
+                charset: utf8mb4
+
     orm:
-        auto_generate_proxy_classes: true
-        enable_lazy_ghost_objects: true
-        report_fields_where_declared: true
-        validate_xml_mapping: true
-        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
-        auto_mapping: true
-        mappings:
-            App:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
+        default_entity_manager: default
+        entity_managers:
+            default:
+                connection: default
+#                auto_generate_proxy_classes: true
+#                enable_lazy_ghost_objects: true
+                report_fields_where_declared: true
+                validate_xml_mapping: true
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                auto_mapping: true
+                mappings:
+                    App:
+                        type: attribute
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity'
+                        prefix: 'App\Entity'
+                        alias: App
+            ugouv:
+                connection: ugouv
 
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
+            # \"TEST_TOKEN\" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
 when@prod:
@@ -42,10 +52,10 @@ when@prod:
                 type: pool
                 pool: doctrine.result_cache_pool
 
-    framework:
-        cache:
-            pools:
-                doctrine.result_cache_pool:
-                    adapter: cache.app
-                doctrine.system_cache_pool:
-                    adapter: cache.system
+framework:
+    cache:
+        pools:
+            doctrine.result_cache_pool:
+                adapter: cache.app
+            doctrine.system_cache_pool:
+                adapter: cache.system
