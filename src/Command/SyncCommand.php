@@ -79,7 +79,7 @@ class SyncCommand extends Command
         $sql = "SELECT TABLE_NAME FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
                 AND TABLE_SCHEMA = 'ugouv'
-                AND TABLE_NAME NOT IN ('user_created_id','_biomed','_biomed_14_09_22','_biomed_15_09_22_mod','umouvement_antenne_')";
+                AND TABLE_NAME NOT IN ('user_created_id','_biomed_14_09_22_(2)','_biomed','_biomed_14_09_22','_biomed_15_09_22_mod','umouvement_antenne_')";
 
         $stmt = $this->sqlServerConnection->prepare($sql);
         return $stmt->executeQuery()->fetchAllAssociative();
