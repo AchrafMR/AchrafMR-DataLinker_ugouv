@@ -76,114 +76,261 @@ class SyncCommand extends Command
     }
     private function getAllTableNames(): array
     {
-        $sql = "SELECT TABLE_NAME FROM information_schema.tables
-                WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_SCHEMA = 'ugouv'
-                AND TABLE_NAME NOT IN ('user_created_id','_biomed_14_09_22_(2)','_biomed','_biomed_14_09_22','_biomed_15_09_22_mod','umouvement_antenne_')";
+//        $sql = "SELECT TABLE_NAME
+//                FROM information_schema.tables
+//                WHERE TABLE_TYPE = 'BASE TABLE'
+//                  AND TABLE_SCHEMA = 'ugouv'
+//                  AND TABLE_NAME IN (
+//                      't_achatdemandeinternecab',
+//                      'ua_t_commandefrscab',
+//                      'ua_t_livraisonfrscab',
+//                      'ua_t_facturefrscab',
+//                      'uv_deviscab',
+//                      'uv_commandecab',
+//                      'uv_livraisoncab',
+//                      'uv_facturecab',
+//                      'p_dossier',
+//                      'u_p_partenaire',
+//                      'p_partenaire_categorie',
+//                      'u_general_operation',
+//                      'tr_transaction'
+//                  );";
+
+        $sql = "SELECT TABLE_NAME
+        FROM information_schema.tables
+        WHERE TABLE_TYPE = 'BASE TABLE'
+        AND TABLE_SCHEMA = 'ugouv'
+        AND TABLE_NAME NOT IN (
+            'user_created_id',
+            '_biomed_14_09_22_(2)',
+            '_biomed',
+            '_biomed_14_09_22',
+            '_biomed_15_09_22_mod',
+            'umouvement_antenne_',
+            'matrice_plan_comptable',
+            'univ_p_mesure_alerte',
+            'utype',
+            'univ_t_admission_documents',
+            'ua_t_livraisonfrsdet_quantite',
+            'univ_p_direction',
+            'univ_xseance',
+            'univ_t_preinscription',
+            'ucategory',
+            'univ_t_alerte',
+            'univ_t_etudiant_appel',
+            'uv_chargedevis',
+            'u_p_affaire',
+            'notification',
+            'pprojet_sous',
+            'univ_ex_controle_module',
+            'tachatdemandeinternecab_fichier',
+            'univ_pl_emptimens',
+            'univ_p_document',
+            'univ_ac_epreuve',
+            'univ_d_prediplomes',
+            'p_forme',
+            'arc_notification',
+            'p_article_nature',
+            'u_p_commandety',
+            'parametrage',
+            'univ_p_nature_alerte',
+            'grs_employe',
+            'ua_t_reglementfrs',
+            'univ_xseance_absences',
+            'taches_users',
+            'arc_projet',
+            'univ_mouchard',
+            'udepot',
+            'p_forme_juridique',
+            'demand_status',
+            'tr_charge',
+            'univ_t_etudiant_bloque',
+            'univ_facetemp',
+            'p_article_niveau',
+            'demand_stock_cab',
+            'univ_pl_emptimens_type',
+            'u_p_devise',
+            'univ_t_brdpaiement',
+            'univ_d_service',
+            'p_global_param',
+            'uv_commandecab',
+            'univ_ex_controle_promotion',
+            'univ_p_document_attribution',
+            'psituation_familiale',
+            'us_module_parametrage',
+            'univ_p_organisme',
+            'p_grade',
+            'us_modules_dossiers',
+            'parametrage_output',
+            'univ_xseance_autorisation',
+            'u_p_partenaire_msj',
+            'us_operation',
+            'univ_d_user_service',
+            'univ_nature_demande',
+            'ptaille',
+            'u_p_partenaire',
+            'univ_xseance_autorisation_lg',
+            'univ_t_preinscription_cab',
+            'univ_p_document_bourse',
+            't_achatdemandeinternedet',
+            'univ_h_albhon',
+            'uv_ta_inter',
+            'p_marches_dossiers',
+            'p_article_niveau_old',
+            'ptype_conge',
+            'univ_pr_concours',
+            'particle_niveau',
+            'univ_xseance_capitaliser',
+            'univ_p_salle',
+            'univ_division_groupe',
+            'p_compte_banque_type',
+            'p_modepaiement',
+            'univ_xseance_justif',
+            'univ_ac_etablissement',
+            'univ_t_grpins',
+            'univ_ex_controle_semestre',
+            'ufacture_type',
+            'p_compte',
+            'uv_ta_inter_old',
+            'p_comptemasse',
+            'univ_num_run_deil',
+            'ptype_contrat',
+            'uarticle_fichier',
+            'p_nomenclature_standard',
+            'ua_t_facturefrsdet',
+            'ufamille',
+            'univ_t_conditionpaiement',
+            'univ_t_preinscription_documents',
+            'ua_t_commandefrscab_acompte',
+            'univ_xseance_motif_abs',
+            'arc_tree',
+            't_conditionpaiement',
+            'umouvement_antenne',
+            'univ_t_preinscription_documents_bource',
+            'tr_chargedet',
+            'v_chargedevis',
+            'pc_fcz',
+            'univ_xseance_sanction',
+            'univ_p_signataire',
+            'univ_division_groupe_detail',
+            'univ_p_enseignant',
+            'puser',
+            'univ_t_preinscription_releve_note',
+            'univ_p_anonymat_actuel',
+            'p_partenaire',
+            'p_compteposte',
+            'ta_client',
+            'uarticle_prix',
+            'pcompte_banque_pdossier',
+            'demande_stock_det',
+            'univ_t_inscription',
+            'p_compte_banque',
+            'univ_ex_enotes',
+            'pcondition_reglement',
+            'univ_p_situation',
+            'uv_facturedet',
+            'univ_t_convocation',
+            'univ_h_honens',
+            'ua_technique_cab',
+            'univ_ac_formation',
+            'ua_t_livraisonfrscab',
+            'univ_p_statut',
+            'univ_p_batiment',
+            'pcounter',
+            'type_partenaire',
+            'univ_t_preinscription_suivi',
+            'demande_type_op',
+            'tr_charges_reglements',
+            'ua_technique_det',
+            'us_parametrage',
+            'univ_pr_concoursdet',
+            'u_articles_categories',
+            'univ_ep_concours',
+            'tr_commandecab',
+            'arc_tree_cab',
+            'umouvement_antenne_old',
+            'devis_technique_cab',
+            'p_compterubrique',
+            'uarticleoldd',
+            'u_general_operation',
+            'univ_p_enseignant_except',
+            'ua_t_commandefrsdet',
+            'univ_p_charge_facture',
+            'ta_commentaire',
+            'umouvement_stock',
+            'univ_etudiant_groupe',
+            'devis_technique_det',
+            'univ_ac_module',
+            'univ_t_etudiant',
+            'arc_tree_det',
+            'uv_livraisoncab',
+            'us_solution',
+            'pdepartement',
+            'univ_p_concours_grille',
+            'univ_pr_correspondance',
+            'p_piece',
+            'univ_t_reglement',
+            'univ_xseance_sanction_lg',
+            'ua_tet_dec',
+            'p_d',
+            'u_p_partenaire_ty',
+            'univ_i_seance',
+            'univ_p_enseignant_grille',
+            'univ_t_inscription_imp_controle',
+            'ua_t_facturefrscab',
+            'grs_grille_conge',
+            'univ_xseance_service',
+            'ta_commentaire_file',
+            'univ_xseance_stage',
+            'univ_p_statutepreuve',
+            'article_old',
+            'univ_ex_anotes',
+            'u_p_projet',
+            'univ_xseance_stage_planing',
+            'tr_commandedet',
+            'ecriture_cab',
+            'pdocument',
+            'univ_ac_promotion',
+            'pville',
+            'ua_tet_enc',
+            'univ_p_concours_matieres',
+            'ta_priorite',
+            'us_sous_module',
+            'univ_p_type_element',
+            'univ_pr_nature_epreuve',
+            'u_p_partenaire_10042023',
+            'up_piece',
+            'univ_p_concourscab',
+            'p_poste',
+            'rh_paie',
+            'pdossier_organisation',
+            'univ_t_inscription_imp_log',
+            'umouvement_stock_encours',
+            'univ_p_estatut',
+            'ta_projet',
+            's_livraisonfrsdet',
+            'grs_note_interne',
+            'univ_p_ville',
+            'tr_operations_transactions',
+            'uv_deviscab_fichier',
+            'sheet1',
+            'univ_ex_fnotes',
+            'article_plan_comptable',
+            'upresponsable',
+            'uantenne',
+            'univ_tpreinscription_fichier',
+            'tr_transaction'
+        )";
+
+//        $sql = "SELECT TABLE_NAME FROM information_schema.tables
+//                WHERE TABLE_TYPE = 'BASE TABLE'
+//                AND TABLE_SCHEMA = 'ugouv'
+//                AND TABLE_NAME NOT IN ('user_created_id','_biomed_14_09_22_(2)','_biomed','_biomed_14_09_22','_biomed_15_09_22_mod','umouvement_antenne_')";
 
         $stmt = $this->sqlServerConnection->prepare($sql);
         return $stmt->executeQuery()->fetchAllAssociative();
-//        dd($stmt->executeQuery()->fetchAllAssociative());
     }
-//execute function
-//    protected function execute(InputInterface $input, OutputInterface $output): int
-//    {
-//        set_time_limit(0); // 0 means no limit
-//        ini_set('memory_limit', '-1'); // '-1' means unlimited memory
-//
-//        $tableName = '';
-//        try {
-//            $synchronisation = new SynchronisationInfo();
-//            $synchronisation->setDateStart(new \DateTime());
-//            $this->entityManager->persist($synchronisation);
-//            $this->entityManager->flush();
-//
-//            $output->writeln('Starting data synchronization...');
-//
-//            // Get the default and 'ugouv' entity managers
-//            $doctrine = $this->getApplication()->getKernel()->getContainer()->get('doctrine');
-//            $defaultEntityManager = $doctrine->getManager();
-//            $ugouvEntityManager = $doctrine->getManager('ugouv');
-//
-//            // Retrieve DBAL connections
-//            $this->sqlServerConnection = $defaultEntityManager->getConnection();
-//            $this->mysqlConnection = $ugouvEntityManager->getConnection();
-//
-//            $tables = $this->getAllTableNames();
-////            dd($tables);
-//            $tableCount = 1;
-//            foreach ($tables as $table) {
-//                $tableName = $table['TABLE_NAME'];
-//                $tableName = '_biomed_14_09_22_(2)';
-//
-//                $output->writeln("$tableCount Processing table: $tableName");
-//
-//                $moreData = true;
-//                $limit = 5000;
-//                $tableCount++;
-//
-//                while ($moreData) {
-//                    $data = $this->fetchUnsynchronizedData($tableName, $limit);
-//                    if (!empty($data)) {
-//                        $primaryKey = $this->getIdOrPrimaryKey($tableName);
-////                            dd($primaryKey);
-//                        if (!$primaryKey) {
-//                            throw new \Exception("Table $tableName does not contain an 'id' column or primary key.");
-//                        }
-//                        // Check if we are dealing with a composite primary key
-//                        if (is_array($primaryKey)) {
-//                            // Composite key case: build an array of composite key values
-//                            $columnIds = [];
-//                            foreach ($data as $row) {
-//                                $compositeKey = [];
-//
-//                                foreach ($primaryKey as $keyColumn) {
-//                                    // Check if $keyColumn is an array or a string
-//                                    if (is_array($keyColumn) && isset($keyColumn['ColumnName'])) {
-//                                        // If $keyColumn is an array, use the 'ColumnName' key
-//                                        $compositeKey[] = $row[$keyColumn['ColumnName']];
-//                                    } else {
-//                                        // If $keyColumn is a string, use it directly
-//                                        $compositeKey[] = $row[$keyColumn];
-//                                    }
-//                                }
-//
-//                                // Concatenate composite key values with a separator (e.g., a dash or comma)
-//                                $columnIds[] = implode('-', $compositeKey);
-//                            }
-//
-//
-//                        } else {
-//                            // Single primary key case
-//                            $columnIds = array_column($data, $primaryKey);
-//                        }
-//
-//
-//                        $this->upsertDataIntoTable($data, $tableName, $primaryKey);
-//                        $this->flagDataAsSynchronized($tableName, $primaryKey, $data);
-//                    } else {
-//                        $moreData = false;
-//                    }
-//                }
-//                gc_collect_cycles();
-//            }
-//
-//            $output->writeln('Data synchronized successfully!');
-//            $this->updateSyncInfo($synchronisation, 'success', 'Synchronization completed successfully.');
-//            return Command::SUCCESS;
-//
-//        } catch (\Exception $e) {
-//            $output->writeln('Error with table ' . ($tableName ?: 'N/A') . ': ' . $e->getMessage());
-//
-//            // Log the error and store it in the synchronization record
-//            $this->updateSyncInfo(
-//                $synchronisation,
-//                'error in Table ' . ($tableName ?: 'N/A'),
-//                $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
-//            );
-//            return Command::FAILURE;
-//        }
-//    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Set unlimited execution time and memory limit
@@ -193,22 +340,21 @@ class SyncCommand extends Command
         $tableName = '';
         try {
             $synchronisation = $this->initializeSynchronization();
-
             $output->writeln('Starting data synchronization...');
             $this->initializeConnections();
 
             $tables = $this->getAllTableNames();
-//            dd($tables);
+//          dd($tables);
             $tableCount = 1;
 
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
-//                $tableName='us_modules_dossiers';
+                $tableName='fac_hosix';
 
                 $output->writeln("$tableCount Processing table: $tableName");
                 $tableCount++;
                 $moreData = true;
-                $limit = 20000;
+                $limit = 1;
 
                 while ($moreData) {
 
@@ -220,7 +366,7 @@ class SyncCommand extends Command
                             throw new \Exception("Table $tableName does not contain an 'id' column or primary key.");
                         }
 
-                        $columnIds = $this->extractPrimaryKeyValues($data, $primaryKey);
+                        $this->extractPrimaryKeyValues($data, $primaryKey);
 //                        dd($columnIds);
                         $this->upsertDataIntoTable($data, $tableName, $primaryKey);
                         $this->flagDataAsSynchronized($tableName, $primaryKey, $data);
@@ -304,6 +450,7 @@ class SyncCommand extends Command
                 } else {
                     $primaryKeyColumn = $primaryKey[0];
                     $whereConditions[] = "$primaryKeyColumn = " . $this->sqlServerConnection->quote($row[$primaryKeyColumn]);
+//                    dd($whereConditions)
                 }
 
                 $whereClause = implode(' AND ', $whereConditions);
@@ -372,14 +519,35 @@ class SyncCommand extends Command
 
     private function validateDate($date, $format = 'Y-m-d H:i:s'): bool
     {
-        if ($date === null || $date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+        // Return false for null, empty, or invalid placeholder dates starting with 0000
+        if ($date === null || $date === '' || preg_match('/^0000/', $date)) {
             return false;
         }
 
+        // Try to parse the date with the provided format
         $d = \DateTime::createFromFormat($format, $date);
-        return $d && $d->format($format) === $date;
+
+
+        // Check if parsing succeeded and matches the format
+        if ($d && $d->format($format) === $date) {
+            return true;
+        }
+
+        // If parsing with the provided format fails, check for 'Y-m-d' (date-only) format
+        $d = \DateTime::createFromFormat('Y-m-d', $date);
+        return $d && $d->format('Y-m-d') === $date;
     }
 
+//    private function validateDate($date, $format = 'Y-m-d H:i:s'): bool
+//    {
+//        if ($date === null || $date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+//            return false;
+//        }
+//
+//        $d = \DateTime::createFromFormat($format, $date);
+//        return $d && $d->format($format) === $date;
+//    }
+//
     private function getColumnTypes(string $tableName, string $schema): array
     {
         $sql = "

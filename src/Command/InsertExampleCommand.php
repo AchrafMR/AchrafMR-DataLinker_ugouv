@@ -444,3 +444,102 @@ class InsertExampleCommand extends Command
         $this->entityManager->flush();
     }
 }
+//execute function
+//    protected function execute(InputInterface $input, OutputInterface $output): int
+//    {
+//        set_time_limit(0); // 0 means no limit
+//        ini_set('memory_limit', '-1'); // '-1' means unlimited memory
+//
+//        $tableName = '';
+//        try {
+//            $synchronisation = new SynchronisationInfo();
+//            $synchronisation->setDateStart(new \DateTime());
+//            $this->entityManager->persist($synchronisation);
+//            $this->entityManager->flush();
+//
+//            $output->writeln('Starting data synchronization...');
+//
+//            // Get the default and 'ugouv' entity managers
+//            $doctrine = $this->getApplication()->getKernel()->getContainer()->get('doctrine');
+//            $defaultEntityManager = $doctrine->getManager();
+//            $ugouvEntityManager = $doctrine->getManager('ugouv');
+//
+//            // Retrieve DBAL connections
+//            $this->sqlServerConnection = $defaultEntityManager->getConnection();
+//            $this->mysqlConnection = $ugouvEntityManager->getConnection();
+//
+//            $tables = $this->getAllTableNames();
+////            dd($tables);
+//            $tableCount = 1;
+//            foreach ($tables as $table) {
+//                $tableName = $table['TABLE_NAME'];
+//                $tableName = '_biomed_14_09_22_(2)';
+//
+//                $output->writeln("$tableCount Processing table: $tableName");
+//
+//                $moreData = true;
+//                $limit = 5000;
+//                $tableCount++;
+//
+//                while ($moreData) {
+//                    $data = $this->fetchUnsynchronizedData($tableName, $limit);
+//                    if (!empty($data)) {
+//                        $primaryKey = $this->getIdOrPrimaryKey($tableName);
+////                            dd($primaryKey);
+//                        if (!$primaryKey) {
+//                            throw new \Exception("Table $tableName does not contain an 'id' column or primary key.");
+//                        }
+//                        // Check if we are dealing with a composite primary key
+//                        if (is_array($primaryKey)) {
+//                            // Composite key case: build an array of composite key values
+//                            $columnIds = [];
+//                            foreach ($data as $row) {
+//                                $compositeKey = [];
+//
+//                                foreach ($primaryKey as $keyColumn) {
+//                                    // Check if $keyColumn is an array or a string
+//                                    if (is_array($keyColumn) && isset($keyColumn['ColumnName'])) {
+//                                        // If $keyColumn is an array, use the 'ColumnName' key
+//                                        $compositeKey[] = $row[$keyColumn['ColumnName']];
+//                                    } else {
+//                                        // If $keyColumn is a string, use it directly
+//                                        $compositeKey[] = $row[$keyColumn];
+//                                    }
+//                                }
+//
+//                                // Concatenate composite key values with a separator (e.g., a dash or comma)
+//                                $columnIds[] = implode('-', $compositeKey);
+//                            }
+//
+//
+//                        } else {
+//                            // Single primary key case
+//                            $columnIds = array_column($data, $primaryKey);
+//                        }
+//
+//
+//                        $this->upsertDataIntoTable($data, $tableName, $primaryKey);
+//                        $this->flagDataAsSynchronized($tableName, $primaryKey, $data);
+//                    } else {
+//                        $moreData = false;
+//                    }
+//                }
+//                gc_collect_cycles();
+//            }
+//
+//            $output->writeln('Data synchronized successfully!');
+//            $this->updateSyncInfo($synchronisation, 'success', 'Synchronization completed successfully.');
+//            return Command::SUCCESS;
+//
+//        } catch (\Exception $e) {
+//            $output->writeln('Error with table ' . ($tableName ?: 'N/A') . ': ' . $e->getMessage());
+//
+//            // Log the error and store it in the synchronization record
+//            $this->updateSyncInfo(
+//                $synchronisation,
+//                'error in Table ' . ($tableName ?: 'N/A'),
+//                $e->getMessage() . ' in file ' . $e->getFile() . ' on line ' . $e->getLine()
+//            );
+//            return Command::FAILURE;
+//        }
+//    }

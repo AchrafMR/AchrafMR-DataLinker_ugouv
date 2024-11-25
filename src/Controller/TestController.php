@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,14 +16,41 @@ class TestController extends AbstractController
     {
         $this->connection = $connection;
     }
+    #[Route('/testmysql', name: 'testmysql')]
+    public function testmysql(ManagerRegistry $doctrine): JsonResponse
+    {
+        // Use the MySQL connection from the 'ugouv' entity manager
+        $mysqlConnection = $doctrine->getManager('ugouv')->getConnection();
 
+        // // Execute a query
+        $testData = $mysqlConnection->fetchAllAssociative("SELECT * FROM avance");
+
+        // Output the data
+        return new JsonResponse($testData);
+    }
     #[Route('/test/tables', name: 'test_tables', methods: ['GET'])]
     public function getAllTableNames(): JsonResponse
     {
         // SQL query to fetch all base table names excluding 'synchronisation_info'
-        $sql = "SELECT TABLE_NAME FROM information_schema.tables
+        $sql = "SELECT TABLE_NAME 
+                FROM information_schema.tables
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                AND TABLE_SCHEMA = 'ugouv'";
+                  AND TABLE_SCHEMA = 'ugouv'
+                  AND TABLE_NAME IN (
+                      't_achatdemandeinternecab', 
+                      'ua_t_commandefrscab', 
+                      'ua_t_livraisonfrscab', 
+                      'ua_t_facturefrscab', 
+                      'uv_deviscab', 
+                      'uv_commandecab', 
+                      'uv_livraisoncab', 
+                      'uv_facturecab', 
+                      'p_dossier', 
+                      'u_p_partenaire', 
+                      'p_partenaire_categorie', 
+                      'u_general_operation', 
+                      'tr_transaction'
+                  );";
 
         // Prepare and execute the query
         $stmt = $this->connection->prepare($sql);
