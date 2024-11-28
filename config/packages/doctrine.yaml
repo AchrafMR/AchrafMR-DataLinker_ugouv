@@ -11,7 +11,11 @@ doctrine:
             ugouv:
                 url: '%env(resolve:DATABASE_URL_UGOUV)%'
                 driver: 'pdo_mysql'
+                server_version: '5.7'
                 charset: utf8mb4
+                default_table_options:
+                    charset: utf8mb4
+                    collate: utf8mb4_unicode_ci
 
     orm:
         default_entity_manager: default
