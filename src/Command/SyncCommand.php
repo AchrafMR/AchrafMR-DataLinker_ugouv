@@ -101,6 +101,7 @@ class SyncCommand extends Command
         WHERE TABLE_TYPE = 'BASE TABLE'
         AND TABLE_SCHEMA = 'ugouv'
         AND TABLE_NAME NOT IN (
+            'fac_hosix',
             'user_created_id',
             '_biomed_14_09_22_(2)',
             '_biomed',
@@ -349,12 +350,12 @@ class SyncCommand extends Command
 
             foreach ($tables as $table) {
                 $tableName = $table['TABLE_NAME'];
-                $tableName='fac_hosix';
+//                $tableName='fac_hosix';
 
                 $output->writeln("$tableCount Processing table: $tableName");
                 $tableCount++;
                 $moreData = true;
-                $limit = 1;
+                $limit =10000;
 
                 while ($moreData) {
 
